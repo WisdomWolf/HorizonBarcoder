@@ -31,6 +31,9 @@ def openFile(options=None):
         return
     else:
         readBarcodeRequest(file_path)
+        
+def oF():
+    openFile()
 
 def importBarcodeDatabase():
     file = 'barcodeList.txt'
@@ -49,7 +52,16 @@ def readBarcodeRequest(file=None):
     print('reading barcode request')
     book = open_workbook(file)
     sheet = book.sheet_by_index(0)
-    for r in range(15, sheet.nrows):
+    start = 0
+    for r in range(sheet.nrows):
+        if sheet.cell_value(r,0) == 1:
+            start = r
+            break
+            
+    for r in range(start, sheet.nrows):
+        if sheet.cell_value(r, 1) == '' or sheet.cell_value(r, 1) == None:
+            break
+            
         row = sheet.row_values(r, 1)
         if str(row[3]) not in barcodeListSet:
             i = BarcodeItem(row[0], row[1], row[2], row[3], row[5])
@@ -75,7 +87,7 @@ def readBarcodeRequest(file=None):
     print(str(file) + ' imported successfully')
     
 def updateBarcodeDatabase():
-    file = 'C:/Users/Ryan/workspace/Horizon Barcode Prepare/src/UploadTemp4 Master.xls'
+    file = 'UploadTemp4 Master.xls'
     print('Extracting barcode data base from ' + str(file))
     sheet = open_workbook(file).sheet_by_index(3)
     print('workbook opened')
@@ -112,6 +124,7 @@ def outputBarcodeListToFile(file=None):
     print('Barcode output complete.')
 
 def shortenName(name):
+    renameString.set(name)
     print('Shorten\n' + name + ' (' + str(len(name)) + ')\n')
     newName = input('->')
     if len(newName) > 30:
@@ -234,6 +247,24 @@ def generatePreAccessFile(file=None):
             print('You failed.')
             os._exit()
             
+    outputBarcodeListToFile()
     print('Pre-Access XLS output completed.')
     
 importBarcodeDatabase()
+
+root = Tk()
+root.title("Rename item")
+
+renameString = StringVar()
+
+mainframe = ttk.Frame(root, padding="3 3 12 12")
+mainframe.grid(column=0, row=1, sticky=(N,W,E,S))
+mainframe.columnconfigure(0, weight=1)
+mainframe.rowconfigure(1, weight=1)
+
+renamerEntry = ttk.Entry(mainframe, width=40, textvariable=renameString)
+renamerEntry.grid(column=1, row=1, sticky=(W,E))
+
+button = ttk.Button(mainframe, text='Done', command=goRename)
+
+
