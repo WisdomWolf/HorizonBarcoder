@@ -19,7 +19,7 @@ class BarcodeItem:
     categories = {'Beverages' : catBeverages, 'Hot' : catHot, 'Cold' : catCold, 
                   'Gift_Items' : catGiftItems, 'Health and Beauty' : catHealthAndBeauty,
                   'Electronics' : catElectronics, 'Apparel' : catApparel, 
-                  'Media' : catMedia}
+                  'Media' : catMedia, 'Snacks' : catSnacks}
     
     def __init__(self, name, manufacturer, brand, upc, cost, cat=None, pri=None):
         self.name = name.strip()

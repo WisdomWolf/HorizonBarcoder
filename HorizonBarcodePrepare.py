@@ -31,6 +31,9 @@ def openFile(options=None):
         return
     else:
         readBarcodeRequest(file_path)
+        
+def oF():
+    openFile()
 
 def importBarcodeDatabase():
     file = 'barcodeList.txt'
@@ -49,7 +52,17 @@ def readBarcodeRequest(file=None):
     print('reading barcode request')
     book = open_workbook(file)
     sheet = book.sheet_by_index(0)
-    for r in range(15, sheet.nrows):
+    
+    startRow = 0
+    for r in range(sheet.nrows):
+        if sheet.cell_value(r,0) == 1:
+            startRow = r
+            break
+            
+    for r in range(startRow, sheet.nrows):
+        if str(sheet.cell_value(r,1)) == '' or sheet.cell_value(r,1) == None:
+            continue
+            
         row = sheet.row_values(r, 1)
         if str(row[3]) not in barcodeListSet:
             i = BarcodeItem(row[0], row[1], row[2], row[3], row[5])
@@ -234,6 +247,7 @@ def generatePreAccessFile(file=None):
             print('You failed.')
             os._exit()
             
+    outputBarcodeListToFile()
     print('Pre-Access XLS output completed.')
     
 importBarcodeDatabase()
