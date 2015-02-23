@@ -228,8 +228,8 @@ def generatePreAccessFile(file=None):
         
     for i, item in zip(range(1, len(newItemList) + 1), newItemList):
         print(str(i) + '/' + str(len(newItemList) + 1))
-        item.category, p = pickCategory(item.name)
-        item.primary = pickPrimary(p)
+        item.category = 'temp'
+        item.primary = 'placeholder'
         row = sheet.row(i)
         row.write(0, item.enterpriseNumber)
         row.write(1, item.name)
