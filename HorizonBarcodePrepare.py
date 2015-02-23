@@ -34,6 +34,19 @@ def openFile(options=None):
         
 def oF():
     openFile()
+    
+def openDirectory():
+    options = {}
+    options['title'] = 'Choose parent directory'
+    file_opt = options
+    dir_path = filedialog.askdirectory(**file_opt)
+    options = None
+    for file in os.listdir(dir_path):
+        if file.endswith('.xls'):
+            readBarcodeRequest(file)
+            
+def oD():
+    openDirectory()
 
 def importBarcodeDatabase():
     file = 'barcodeList.txt'
