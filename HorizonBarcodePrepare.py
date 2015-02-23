@@ -134,7 +134,11 @@ def shortenName(name):
     
 def pickCategory(name):
     global catChoice
-    print('Pick a Category for\n\n' + name + '\n')
+    try:
+        print('Pick a Category for\n\n' + name + '\n')
+    except UnicodeEncodeError:
+        print('Unable to parse item name\n')
+        
     catList = list(sorted(BarcodeItem.categories.keys()))
     for i, cat in zip(range(len(catList)), catList):
         print(str(i + 1) + '. ' + str(cat))
@@ -249,5 +253,9 @@ def generatePreAccessFile(file=None):
             
     outputBarcodeListToFile()
     print('Pre-Access XLS output completed.')
+    
+    
+def gPAF():
+    generatePreAccessFile()
     
 importBarcodeDatabase()

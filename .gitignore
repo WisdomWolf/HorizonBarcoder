@@ -52,3 +52,9 @@ docs/_build/
 
 # PyBuilder
 target/
+
+# Excel Docs
+Archive/**
+*.xls*
+*.7z
+**.accdb
