@@ -7,6 +7,7 @@ import codecs
 import pdb
 from datetime import date
 from BarcodeItem import BarcodeItem, calculateBarcodeChecksum
+from BarcodeUtilities import safePrint
 from tkinter import *
 from tkinter import ttk, messagebox, filedialog
 from xlwt import Workbook, easyxf
@@ -16,6 +17,9 @@ barcodeListSet = set()
 newItemList = []
 catChoice = None
 priChoice = None
+itemCount = 0
+itemImportCount = 0
+itemIndex = 0
 
 def openFile(options=None):
     if options == None:
@@ -41,12 +45,47 @@ def openDirectory():
     file_opt = options
     dir_path = filedialog.askdirectory(**file_opt)
     options = None
+    enumerateFiles(dir_path)
     for file in os.listdir(dir_path):
-        if file.endswith('.xls'):
-            readBarcodeRequest(file)
+        if file.endswith('.xls') and 'Upload_to_Access' not in file:
+            readBarcodeRequest(file) 
+            print(file + ' completed.')
+            c = input('Pause or Continue? ')
+            if (str(c)).casefold() == 'p'.casefold():
+                gPAF()
+                os._exit(0)
+            else:
+                continue
             
 def oD():
     openDirectory()
+    
+def enumerateFiles(path):
+    for file in os.listdir(path):
+        if file.endswith('.xls') and 'Upload_to_Access' not in file:
+            countItems(file)
+    
+    global itemIndex
+    global itemCount
+    itemIndex = itemCount
+    
+def countItems(file):
+    book = open_workbook(file)
+    sheet = book.sheet_by_index(0)
+    
+    startRow = 0
+    for r in range(sheet.nrows):
+        if sheet.cell_value(r,0) == 1:
+            startRow = r
+            break
+            
+    for r in range(startRow, sheet.nrows):
+        if str(sheet.cell_value(r,1)) == '' or sheet.cell_value(r,1) == None:
+            continue
+            
+        global itemCount
+        itemCount += 1
+    
 
 def importBarcodeDatabase():
     file = 'barcodeList.txt'
@@ -77,20 +116,29 @@ def readBarcodeRequest(file=None):
             continue
             
         row = sheet.row_values(r, 1)
-        if str(row[3]) not in barcodeListSet:
-            i = BarcodeItem(row[0], row[1], row[2], row[3], row[5])
+        global itemImportCount
+        itemImportCount += 1
+        print('Import Progress: ' + str(itemImportCount) + '/' + str(itemCount) + '\n')
+        print(str(int((itemImportCount / itemCount) * 100)) + '%\n')
+        i = BarcodeItem(row[0], row[1], row[2], row[3], row[5])
+        if i.upc not in barcodeListSet:
             barcodeListSet.add(i.upc)
             newItemList.append(i)
         else:
-            print(row[0] + ' has duplicate upc [' + str(row[3]) + ']')
-            c = input('[S]kip, [N]ew, [A]bort -> ')
-            c = c or 's'
-            if str(c).casefold() == 'a'.casefold():
+            safePrint(row[0] + ' has duplicate upc [' + str(i.upc) + ']')
+            c = input('[C]ontinue, [S]kip, [N]ew, [A]bort -> ')
+            c = c or 'c'
+            if (str(c)).casefold() == 'c'.casefold():
+                print('continuing')
+                #i = BarcodeItem(row[0], row[1], row[2], row[3], row[5])
+                barcodeListSet.add(i.upc)
+                newItemList.append(i)
+            elif str(c).casefold() == 'a'.casefold():
                 print('Aborting')
-                os._exit()
+                os._exit(0)
             elif str(c).casefold() == 'n'.casefold():
                 print('generating new upc')
-                i = BarcodeItem(row[0], row[1], row[2], row[3], row[5])
+               # i = BarcodeItem(row[0], row[1], row[2], row[3], row[5])
                 i.updateUPC(generateUniqueBarcode(i.upc))
                 barcodeListSet.add(i.upc)
                 newItemList.append(i)
@@ -138,7 +186,10 @@ def outputBarcodeListToFile(file=None):
     print('Barcode output complete.')
 
 def shortenName(name):
-    print('Shorten\n' + name + ' (' + str(len(name)) + ')\n')
+    try:
+        safePrint('Shorten\n' + name + ' (' + str(len(name)) + ')\n')
+    except UnicodeEncodeError:
+        return '*!' + name + '*!'
     newName = input('->')
     if len(newName) > 30:
         return shortenName(newName)
@@ -202,6 +253,12 @@ def pickPrimary(priList):
 def generateUniqueBarcode(barcode, leadingZero=False):
     #pdb.set_trace()
     barcode = str(barcode)
+    try:
+        x = int(barcode)
+    except ValueError:
+        l = list(barcodeListSet)
+        barcode = l[-1] 
+        
     if barcode in barcodeListSet:
         if barcode[0] == '0':
             leadingZero = True

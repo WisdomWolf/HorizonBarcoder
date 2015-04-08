@@ -1,4 +1,5 @@
 #!/usr/bin/python
+from BarcodeUtilities import safePrint
 
 class BarcodeItem:
     """An object to simplify item property assignment"""
@@ -22,11 +23,11 @@ class BarcodeItem:
                   'Media' : catMedia, 'Snacks' : catSnacks}
     
     def __init__(self, name, manufacturer, brand, upc, cost, cat=None, pri=None):
-        self.name = name.strip()
+        self.name = str(name).strip()
         if len(self.name) > 30:
             self.name = shortenName(self.name)
-        self.manufacturer = manufacturer.strip()
-        self.brand = brand.strip()
+        self.manufacturer = str(manufacturer).strip()
+        self.brand = str(brand).strip()
         self.upc = str(upc).strip().split(sep='.', maxsplit=1)[0]
         self.cost = cost
         self.enterpriseNumber = 'MMS-' + self.upc
@@ -35,7 +36,7 @@ class BarcodeItem:
         
     def updateUPC(self, upc):
         self.upc = str(upc).strip()
-        self.enterpriseNumber = 'MMS-' + self.upc
+        self.enterpriseNumber = 'MMS - ' + self.upc
         
 def calculateBarcodeChecksum(barcode):
     barcode = str(barcode)
@@ -57,9 +58,15 @@ def calculateBarcodeChecksum(barcode):
             return barcode + str(tempSum)
         
 def shortenName(name):
-    print('Shorten\n' + name + ' (' + str(len(name)) + ')\n')
-    newName = input('->')
-    if len(newName) > 30:
-        return shortenName(newName)
-    else:
-        return newName
+    try:
+        safePrint('Shorten\n' + name + ' (' + str(len(name)) + ')\n')
+        print('->------------------------------')
+        newName = input('->')
+        if len(newName) > 30:
+            return shortenName(newName)
+        else:
+            return newName
+    except UnicodeEncodeError:
+        print('There was an error processing this name')
+        return '!' + name
+   
