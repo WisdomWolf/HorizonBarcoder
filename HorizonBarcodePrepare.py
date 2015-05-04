@@ -1,6 +1,6 @@
 #!/usr/bin/python
 
-import os
+import os, shutil
 import sys
 import re
 import codecs
@@ -20,6 +20,9 @@ priChoice = None
 itemCount = 0
 itemImportCount = 0
 itemIndex = 0
+sheet = None
+lastRow = None
+book = None
 
 def openFile(options=None):
     if options == None:
@@ -39,26 +42,36 @@ def openFile(options=None):
 def oF():
     openFile()
     
-def openDirectory():
-    options = {}
-    options['title'] = 'Choose parent directory'
-    file_opt = options
-    dir_path = filedialog.askdirectory(**file_opt)
-    options = None
+def openDirectory(dir=None):
+    if not dir:
+        options = {}
+        options['title'] = 'Choose parent directory'
+        file_opt = options
+        dir_path = filedialog.askdirectory(**file_opt)
+        options = None
+    else:
+        dir_path = dir
     enumerateFiles(dir_path)
     for file in os.listdir(dir_path):
         if file.endswith('.xls') and 'Upload_to_Access' not in file:
-            readBarcodeRequest(file) 
-            print(file + ' completed.')
-            c = input('Pause or Continue? ')
-            if (str(c)).casefold() == 'p'.casefold():
-                gPAF()
-                os._exit(0)
-            else:
-                continue
+            # os.startfile(file)
+            # x = input('Continue or Abort\n')
+            # if 'a'.casefold() in x:
+                # input('Exiting...')
+                # os.exit(0)
+            readBarcodeRequest(file)
+            gPAF()
+            archiveFile(file)
             
-def oD():
-    openDirectory()
+def oD(dir=None):
+    dir = dir or os.getcwd()
+    openDirectory(dir)
+    
+def archiveFile(file):
+    newPath = os.getcwd() + '/Archive/' + date.today().strftime('%m.%d.%Y')
+    if not os.access(newPath, os.F_OK):
+        os.mkdir(newPath)
+    shutil.move(file, newPath)
     
 def enumerateFiles(path):
     for file in os.listdir(path):
@@ -78,6 +91,9 @@ def countItems(file):
         if sheet.cell_value(r,0) == 1:
             startRow = r
             break
+    else:
+        if sheet.cell_value(r,0) == 'Example':
+            startRow = int(r) + 1
             
     for r in range(startRow, sheet.nrows):
         if str(sheet.cell_value(r,1)) == '' or sheet.cell_value(r,1) == None:
@@ -110,6 +126,8 @@ def readBarcodeRequest(file=None):
         if sheet.cell_value(r,0) == 1:
             startRow = r
             break
+        elif sheet.cell_value(r,0) == 'Example':
+            startRow = int(r) + 1
             
     for r in range(startRow, sheet.nrows):
         if str(sheet.cell_value(r,1)) == '' or sheet.cell_value(r,1) == None:
@@ -146,7 +164,7 @@ def readBarcodeRequest(file=None):
                 print('skipping')
                 continue
                 
-    print(str(file) + ' imported successfully')
+    print(str(file) + ' imported successfully\n')
     
 def updateBarcodeDatabase():
     file = 'C:/Users/Ryan/workspace/Horizon Barcode Prepare/src/UploadTemp4 Master.xls'
@@ -284,20 +302,22 @@ def generatePreAccessFile(file=None):
         return
     
     file = file or 'Upload_to_Access.xls'
-    book = Workbook()
+    global sheet, lastRow, book
+    if not sheet:
+        book = Workbook()
+        sheet = book.add_sheet(date.today().strftime('%m.%d.%Y'))
+        row1 = sheet.row(0)
+        lastRow = 0
+        headingList = ['Enterprise Number', 'Enterprise Name', 'Price',
+                       'Cost', 'Source', 'Category', 'Primary', 'Secondary',
+                       'Detail', 'Manufacturer', 'Size/Quantity', 'Station',
+                       'Brand', 'UPC CODES']
         
-    sheet = book.add_sheet(date.today().strftime('%m.%d.%Y'))
-    row1 = sheet.row(0)
-    headingList = ['Enterprise Number', 'Enterprise Name', 'Price',
-                   'Cost', 'Source', 'Category', 'Primary', 'Secondary',
-                   'Detail', 'Manufacturer', 'Size/Quantity', 'Station',
-                   'Brand', 'UPC CODES']
-    
-    for col in range(len(headingList)):
-        row1.write(col, headingList[col])
+        for col in range(len(headingList)):
+            row1.write(col, headingList[col])
         
-    for i, item in zip(range(1, len(newItemList) + 1), newItemList):
-        print(str(i) + '/' + str(len(newItemList) + 1))
+    for i, item in zip(range((lastRow + 1), len(newItemList) + lastRow + 1), newItemList):
+        print(str(i) + '/' + str(len(newItemList)) + ' ' + item.name)
         item.category = 'temp'
         item.primary = 'placeholder'
         row = sheet.row(i)
@@ -310,6 +330,8 @@ def generatePreAccessFile(file=None):
         row.write(9, item.manufacturer)
         row.write(10, 'each')
         row.write(13, item.upc)
+        lastRow = i
+        print('Last Row:', lastRow)
         
     try:
         book.save(file)
@@ -322,10 +344,12 @@ def generatePreAccessFile(file=None):
             os._exit()
             
     outputBarcodeListToFile()
-    print('Pre-Access XLS output completed.')
+    newItemList.clear()
+    print('Pre-Access XLS output completed.\n')
     
     
 def gPAF():
     generatePreAccessFile()
     
 importBarcodeDatabase()
+#pdb.set_trace()

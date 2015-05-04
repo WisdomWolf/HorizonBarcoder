@@ -1,7 +1,8 @@
 #!/usr/bin/python
+import sys
 
 def myPrint(uglyString):
-    print(str(uglyString.encode(sys.stdout.encoding, errors='replace'))[2:-1])
+    print(str(uglyString.encode(sys.stdout.encoding, errors='replace'))).decode()
 
 def safePrint(nString):
     try:

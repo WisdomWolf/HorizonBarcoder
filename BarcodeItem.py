@@ -36,7 +36,7 @@ class BarcodeItem:
         
     def updateUPC(self, upc):
         self.upc = str(upc).strip()
-        self.enterpriseNumber = 'MMS - ' + self.upc
+        self.enterpriseNumber = 'MMS-' + self.upc
         
 def calculateBarcodeChecksum(barcode):
     barcode = str(barcode)
