@@ -5,6 +5,7 @@ import sys
 import re
 import codecs
 import pdb
+import random
 from datetime import date
 from BarcodeItem import BarcodeItem, calculateBarcodeChecksum
 from BarcodeUtilities import safePrint
@@ -35,9 +36,9 @@ def openFile(options=None):
     options = None
     if file_path == None or file_path == "":
         print("No file selected")
-        return
+        return None
     else:
-        readBarcodeRequest(file_path)
+        return file_path
         
 def oF():
     openFile()
@@ -305,7 +306,7 @@ def generatePreAccessFile(file=None):
     global sheet, lastRow, book
     if not sheet:
         book = Workbook()
-        sheet = book.add_sheet(date.today().strftime('%m.%d.%Y'))
+        sheet = book.add_sheet('Sheet 1')
         row1 = sheet.row(0)
         lastRow = 0
         headingList = ['Enterprise Number', 'Enterprise Name', 'Price',
@@ -350,6 +351,27 @@ def generatePreAccessFile(file=None):
     
 def gPAF():
     generatePreAccessFile()
+    
+def generateSpotCheck():
+    file = openFile()
+    book = open_workbook(file)
+    sheet = book.sheet_by_index(0)
+    spotCheckMap = {}
+    
+    toBeCheckedList = random.sample(range(1, sheet.nrows), round(sheet.nrows * .2))
+    
+    for row in toBeCheckedList:
+        spotCheckMap[sheet.cell_value(row, 1)] = sheet.cell_value(row, 13)
+        
+    with codecs.open('spot_check.csv', 'w+', 'utf8') as f:
+            for item, sku in spotCheckMap.items():
+                f.write(str(sku) + ',' + str(item) + '\r\n')
+                
+    print('Spot Check Generation Complete\n')
+                
+def gSC():
+    generateSpotCheck()
+        
     
 importBarcodeDatabase()
 #pdb.set_trace()
