@@ -64,6 +64,8 @@ def openDirectory(dir=None):
             gPAF()
             archiveFile(file)
             
+    generateSpotCheck('Upload_to_Access.xls')
+            
 def oD(dir=None):
     dir = dir or os.getcwd()
     openDirectory(dir)
@@ -138,7 +140,10 @@ def readBarcodeRequest(file=None):
         global itemImportCount
         itemImportCount += 1
         print('Import Progress: ' + str(itemImportCount) + '/' + str(itemCount) + '\n')
-        print(str(int((itemImportCount / itemCount) * 100)) + '%\n')
+        try:
+            print(str(int((itemImportCount / itemCount) * 100)) + '%\n')
+        except ZeroDivisionError:
+            pass
         i = BarcodeItem(row[0], row[1], row[2], row[3], row[5])
         if i.upc not in barcodeListSet:
             barcodeListSet.add(i.upc)
@@ -348,12 +353,11 @@ def generatePreAccessFile(file=None):
     newItemList.clear()
     print('Pre-Access XLS output completed.\n')
     
-    
 def gPAF():
     generatePreAccessFile()
     
-def generateSpotCheck():
-    file = openFile()
+def generateSpotCheck(file=None):
+    file = file or openFile()
     book = open_workbook(file)
     sheet = book.sheet_by_index(0)
     spotCheckMap = {}
@@ -368,6 +372,7 @@ def generateSpotCheck():
                 f.write(str(sku) + ',' + str(item) + '\r\n')
                 
     print('Spot Check Generation Complete\n')
+    os.startfile(file)
                 
 def gSC():
     generateSpotCheck()
