@@ -6,7 +6,7 @@ class BarcodeItem:
     
     catBeverages = ['hot', 'cold']
     catHot = ['coffee', 'tea', 'other']
-    catSnacks = ['gum', 'energy and health', 'candy', 'frozen/refigerated',
+    catSnacks = ['gum', 'energy and health', 'candy', 'frozen/refrigerated',
                  'nuts', 'chocolate', 'chips', 'cookies', 'pastries', 'other']
     catCold = ['iced tea', 'juice', 'milk', 'soda', 'water', 'energy',
                'not carbonated', 'other']

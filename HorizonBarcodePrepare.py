@@ -47,6 +47,7 @@ def openDirectory(dir=None):
     if not dir:
         options = {}
         options['title'] = 'Choose parent directory'
+        options['initialdir'] = os.getcwd()
         file_opt = options
         dir_path = filedialog.askdirectory(**file_opt)
         options = None
@@ -379,4 +380,5 @@ def gSC():
         
     
 importBarcodeDatabase()
-#pdb.set_trace()
+if not sys.flags.interactive:
+    openDirectory()
