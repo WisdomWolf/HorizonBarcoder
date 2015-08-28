@@ -1,4 +1,4 @@
-#!/usr/bin/python
+#!/usr/bin/python3
 
 import os, shutil
 import sys
@@ -138,6 +138,7 @@ def readBarcodeRequest(file=None):
             continue
             
         row = sheet.row_values(r, 1)
+        enterprise = None
         global itemImportCount
         itemImportCount += 1
         print('Import Progress: ' + str(itemImportCount) + '/' + str(itemCount) + '\n')
@@ -145,7 +146,9 @@ def readBarcodeRequest(file=None):
             print(str(int((itemImportCount / itemCount) * 100)) + '%\n')
         except ZeroDivisionError:
             pass
-        i = BarcodeItem(row[0], row[1], row[2], row[3], row[5])
+        if 'MMS' in row[1]: #Utilize predefined MMS number
+            enterprise = row[1]
+        i = BarcodeItem(row[0], row[1], row[2], row[3], row[5], enterprise=enterprise)
         if i.upc not in barcodeListSet:
             barcodeListSet.add(i.upc)
             newItemList.append(i)

@@ -1,5 +1,6 @@
 #!/usr/bin/python
 from BarcodeUtilities import safePrint
+import pdb
 
 class BarcodeItem:
     """An object to simplify item property assignment"""
@@ -22,21 +23,24 @@ class BarcodeItem:
                   'Electronics' : catElectronics, 'Apparel' : catApparel, 
                   'Media' : catMedia, 'Snacks' : catSnacks}
     
-    def __init__(self, name, manufacturer, brand, upc, cost, cat=None, pri=None):
+    def __init__(self, name, manufacturer, brand, upc, cost,
+                cat=None, pri=None, enterprise=None):
         self.name = str(name).strip()
         if len(self.name) > 30:
-            self.name = shortenName(self.name)
+            self.name = self.name[:30]
         self.manufacturer = str(manufacturer).strip()
         self.brand = str(brand).strip()
         self.upc = str(upc).strip().split(sep='.', maxsplit=1)[0]
         self.cost = cost
-        self.enterpriseNumber = 'MMS-' + self.upc
+        self.enterpriseNumber = enterprise or 'MMS-{0}'.format(self.upc)
+        self.has_defined_MMS = enterprise
         self.category = cat
         self.primary = pri
         
     def updateUPC(self, upc):
         self.upc = str(upc).strip()
-        self.enterpriseNumber = 'MMS-' + self.upc
+        if not self.has_defined_MMS:
+            self.enterpriseNumber = 'MMS-{0}'.format(self.upc)
         
 def calculateBarcodeChecksum(barcode):
     barcode = str(barcode)
