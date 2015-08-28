@@ -58,3 +58,8 @@ Archive/**
 *.xls*
 *.7z
 **.accdb
+**.csv
+
+# Misc
+**Thumbs.db
+barcodeList.txt
