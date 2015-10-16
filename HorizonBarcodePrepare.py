@@ -25,7 +25,8 @@ sheet = None
 lastRow = None
 book = None
 
-def openFile(options=None):
+
+def open_file(options=None):
     if options == None:
         options = {}
         options['defaultextension'] = '.xls' 
@@ -39,11 +40,13 @@ def openFile(options=None):
         return None
     else:
         return file_path
-        
+
+
 def oF():
-    openFile()
-    
-def openDirectory(dir=None):
+    open_file()
+
+
+def open_directory(dir=None):
     if not dir:
         options = {}
         options['title'] = 'Choose parent directory'
@@ -53,40 +56,42 @@ def openDirectory(dir=None):
         options = None
     else:
         dir_path = dir
-    enumerateFiles(dir_path)
+    enumerate_files(dir_path)
     for file in os.listdir(dir_path):
         if file.endswith('.xls') and 'Upload_to_Access' not in file:
-            # os.startfile(file)
-            # x = input('Continue or Abort\n')
-            # if 'a'.casefold() in x:
-                # input('Exiting...')
-                # os.exit(0)
-            readBarcodeRequest(file)
-            gPAF()
-            archiveFile(file)
+            if 'POS Export' in file:
+                read_export_request(file)
+            else:
+                read_barcode_request(file)
+            generate_pre_access_file()
+            archive_file(file)
             
-    generateSpotCheck('Upload_to_Access.xls')
-            
+    generate_spot_check('Upload_to_Access.xls')
+
+
 def oD(dir=None):
     dir = dir or os.getcwd()
-    openDirectory(dir)
-    
-def archiveFile(file):
+    open_directory(dir)
+
+
+def archive_file(file):
     newPath = os.getcwd() + '/Archive/' + date.today().strftime('%m.%d.%Y')
     if not os.access(newPath, os.F_OK):
         os.mkdir(newPath)
     shutil.move(file, newPath)
-    
-def enumerateFiles(path):
+
+
+def enumerate_files(path):
     for file in os.listdir(path):
         if file.endswith('.xls') and 'Upload_to_Access' not in file:
-            countItems(file)
+            count_items(file)
     
     global itemIndex
     global itemCount
     itemIndex = itemCount
-    
-def countItems(file):
+
+
+def count_items(file):
     book = open_workbook(file)
     sheet = book.sheet_by_index(0)
     
@@ -107,7 +112,7 @@ def countItems(file):
         itemCount += 1
     
 
-def importBarcodeDatabase():
+def import_barcode_database():
     file = 'barcodeList.txt'
     if os.path.exists(file):
         with codecs.open(file, 'r+', 'utf-8') as f:
@@ -117,10 +122,61 @@ def importBarcodeDatabase():
                     barcodeListSet.add(barcode)
         print('imported barcodes from ' + file)
     else:
-        updateBarcodeDatabase()
-    
-def readBarcodeRequest(file=None):
-    file = file or 'Copy of Add Menu Item Request Master Form.xls'
+        update_barcode_database()
+
+
+def read_export_request(file):
+    global itemImportCount
+    print('reading barcode request')
+    book = open_workbook(file)
+    sheet = book.sheet_by_index(0)
+
+    for r in range(1, sheet.nrows):
+        if str(sheet.cell_value(r,1)) == '' or sheet.cell_value(r,1) == None:
+            continue
+
+        row = sheet.row_values(r, 1)
+        enterprise = None
+        itemImportCount += 1
+        try:
+            percent = str(int((itemImportCount / itemCount) * 100)) + '%'
+        except ZeroDivisionError:
+            percent = 'x%'
+
+        print('Import Progress: {0}/{1} {2}\n'.format(itemImportCount, itemCount, percent))
+
+        manufacturer = row[8]
+        brand = row[8]
+        i = BarcodeItem(row[2], manufacturer, brand, row[1], row[5],
+                        row[6], row[7], enterprise=enterprise)
+        if i.upc not in barcodeListSet:
+            barcodeListSet.add(i.upc)
+            newItemList.append(i)
+        else:
+            safePrint(row[0] + ' has duplicate upc [' + str(i.upc) + ']')
+            c = input('[C]ontinue, [S]kip, [N]ew, [A]bort -> ')
+            c = c or 'c'
+            if (str(c)).casefold() == 'c'.casefold():
+                print('continuing')
+                barcodeListSet.add(i.upc)
+                newItemList.append(i)
+            elif str(c).casefold() == 'a'.casefold():
+                print('Aborting')
+                os._exit(0)
+            elif str(c).casefold() == 'n'.casefold():
+                print('generating new upc')
+                i.updateUPC(generate_unique_barcode(i.upc))
+                barcodeListSet.add(i.upc)
+                newItemList.append(i)
+            else:
+                print('skipping')
+                continue
+
+    print(str(file) + ' imported successfully\n')
+
+
+def read_barcode_request(file):
+    global itemImportCount
     print('reading barcode request')
     book = open_workbook(file)
     sheet = book.sheet_by_index(0)
@@ -139,7 +195,6 @@ def readBarcodeRequest(file=None):
             
         row = sheet.row_values(r, 1)
         enterprise = None
-        global itemImportCount
         itemImportCount += 1
         print('Import Progress: ' + str(itemImportCount) + '/' + str(itemCount) + '\n')
         try:
@@ -167,7 +222,7 @@ def readBarcodeRequest(file=None):
             elif str(c).casefold() == 'n'.casefold():
                 print('generating new upc')
                # i = BarcodeItem(row[0], row[1], row[2], row[3], row[5])
-                i.updateUPC(generateUniqueBarcode(i.upc))
+                i.updateUPC(generate_unique_barcode(i.upc))
                 barcodeListSet.add(i.upc)
                 newItemList.append(i)
             else:
@@ -175,8 +230,9 @@ def readBarcodeRequest(file=None):
                 continue
                 
     print(str(file) + ' imported successfully\n')
-    
-def updateBarcodeDatabase():
+
+
+def update_barcode_database():
     file = 'C:/Users/Ryan/workspace/Horizon Barcode Prepare/src/UploadTemp4 Master.xls'
     print('Extracting barcode data base from ' + str(file))
     sheet = open_workbook(file).sheet_by_index(3)
@@ -196,8 +252,9 @@ def updateBarcodeDatabase():
          
         if barcode not in barcodeListSet:
             barcodeListSet.add(barcode)
-            
-def outputBarcodeListToFile(file=None):
+
+
+def output_barcode_list_to_file(file=None):
     file = file or 'barcodeList.txt'
     if barcodeListSet == None:
         print('Barcode List is empty. Aborting.')
@@ -213,18 +270,20 @@ def outputBarcodeListToFile(file=None):
                     
     print('Barcode output complete.')
 
-def shortenName(name):
+
+def shorten_name(name):
     try:
         safePrint('Shorten\n' + name + ' (' + str(len(name)) + ')\n')
     except UnicodeEncodeError:
         return '*!' + name + '*!'
     newName = input('->')
     if len(newName) > 30:
-        return shortenName(newName)
+        return shorten_name(newName)
     else:
         return newName
-    
-def pickCategory(name):
+
+
+def pick_category(name):
     global catChoice
     try:
         print('Pick a Category for\n\n' + name + '\n')
@@ -248,15 +307,15 @@ def pickCategory(name):
         return
     elif c < 1 or c > len(BarcodeItem.categories):
         print('Invalid selection.  Try again.')
-        return pickCategory(name)
+        return pick_category(name)
     else:
         catChoice = c
         return catList[c - 1], BarcodeItem.categories[catList[c - 1]]
-    
-def pickPrimary(priList):
+
+
+def pick_primary(priList):
     global priChoice
     print('\nPick a subcategory')
-    #pdb.set_trace()
     for i, cat in zip(range(len(priList)), priList):
         print(str(i + 1) + '. ' + str(cat).title())
     
@@ -273,13 +332,13 @@ def pickPrimary(priList):
         return
     elif c < 1 or c > len(priList):
         print('Invalid selection. Try again.')
-        return pickPrimary(priList)
+        return pick_primary(priList)
     else:
         priChoice = c
         return priList[c -1].title()
-    
-def generateUniqueBarcode(barcode, leadingZero=False):
-    #pdb.set_trace()
+
+
+def generate_unique_barcode(barcode, leadingZero=False):
     barcode = str(barcode)
     try:
         x = int(barcode)
@@ -296,17 +355,18 @@ def generateUniqueBarcode(barcode, leadingZero=False):
                 barcode = calculateBarcodeChecksum('0' + str(barcode))
             else:
                 barcode = calculateBarcodeChecksum(str(barcode))
-            return generateUniqueBarcode(barcode, leadingZero)
+            return generate_unique_barcode(barcode, leadingZero)
         else:
             barcode = int(barcode) + 1
-            return generateUniqueBarcode(barcode, leadingZero)
+            return generate_unique_barcode(barcode, leadingZero)
     else:
         if leadingZero and len(str(barcode)) == 11:
             return '0' + barcode
         else:
             return barcode
-    
-def generatePreAccessFile(file=None):
+
+
+def generate_pre_access_file(file=None):
     if newItemList == None:
         print('No items to process.')
         return
@@ -353,15 +413,17 @@ def generatePreAccessFile(file=None):
             print('You failed.')
             os._exit()
             
-    outputBarcodeListToFile()
+    output_barcode_list_to_file()
     newItemList.clear()
     print('Pre-Access XLS output completed.\n')
-    
+
+
 def gPAF():
-    generatePreAccessFile()
-    
-def generateSpotCheck(file=None):
-    file = file or openFile()
+    generate_pre_access_file()
+
+
+def generate_spot_check(file=None):
+    file = file or open_file()
     book = open_workbook(file)
     sheet = book.sheet_by_index(0)
     spotCheckMap = {}
@@ -377,11 +439,11 @@ def generateSpotCheck(file=None):
                 
     print('Spot Check Generation Complete\n')
     os.startfile(file)
-                
+
 def gSC():
-    generateSpotCheck()
+    generate_spot_check()
         
     
-importBarcodeDatabase()
+import_barcode_database()
 if not sys.flags.interactive:
-    openDirectory()
+    open_directory()
