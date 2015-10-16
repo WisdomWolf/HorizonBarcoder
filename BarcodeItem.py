@@ -23,8 +23,8 @@ class BarcodeItem:
                   'Electronics' : catElectronics, 'Apparel' : catApparel, 
                   'Media' : catMedia, 'Snacks' : catSnacks}
     
-    def __init__(self, name, manufacturer, brand, upc, cost,
-                cat=None, pri=None, enterprise=None):
+    def __init__(self, name, manufacturer, brand, upc, cost=0,
+                cat='temp', pri='placeholder', enterprise=None):
         self.name = str(name).strip()
         if len(self.name) > 30:
             self.name = self.name[:30]
@@ -36,6 +36,10 @@ class BarcodeItem:
         self.has_defined_MMS = enterprise
         self.category = cat
         self.primary = pri
+        if self.category != 'temp' or self.has_defined_MMS:
+            self.source = 'Prepared Item Webtrition'
+        else:
+            self.source = 'Prepackaged Items'
         
     def updateUPC(self, upc):
         self.upc = str(upc).strip()

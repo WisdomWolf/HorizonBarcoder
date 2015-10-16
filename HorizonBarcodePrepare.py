@@ -64,7 +64,14 @@ def open_directory(dir=None):
             else:
                 read_barcode_request(file)
             generate_pre_access_file()
-            archive_file(file)
+            done = False
+            while not done:
+                try:
+                    archive_file(file)
+                    done = True
+                except PermissionError:
+                    input('{0} is locked. Press enter to retry'.format(file))
+                    done = False
             
     generate_spot_check('Upload_to_Access.xls')
 
@@ -75,11 +82,20 @@ def oD(dir=None):
 
 
 def archive_file(file):
-    newPath = os.getcwd() + '/Archive/' + date.today().strftime('%m.%d.%Y')
+    newPath = os.getcwd() + '\\Archive\\' + date.today().strftime('%m.%d.%Y')
     if not os.access(newPath, os.F_OK):
         os.mkdir(newPath)
-    shutil.move(file, newPath)
-
+    try:
+        shutil.move(file, newPath)
+    except shutil.Error:
+        want_replace = input('There is already a file named {0} in the archive.'
+                             ' Do you want to replace?'.format(file))
+        if want_replace.casefold() == 'y' or want_replace.casefold() == 'yes':
+            os.remove(newPath + '\\' + file)
+            print('Removed {0}'.format(file))
+            archive_file(file)
+        else:
+            print('{0} has not been archived.'.format(file))
 
 def enumerate_files(path):
     for file in os.listdir(path):
@@ -100,9 +116,11 @@ def count_items(file):
         if sheet.cell_value(r,0) == 1:
             startRow = r
             break
-    else:
-        if sheet.cell_value(r,0) == 'Example':
+        elif sheet.cell_value(r,0) == 'Example':
             startRow = int(r) + 1
+            break
+    else:
+        startRow = 1
             
     for r in range(startRow, sheet.nrows):
         if str(sheet.cell_value(r,1)) == '' or sheet.cell_value(r,1) == None:
@@ -127,7 +145,7 @@ def import_barcode_database():
 
 def read_export_request(file):
     global itemImportCount
-    print('reading barcode request')
+    print('reading daily export request')
     book = open_workbook(file)
     sheet = book.sheet_by_index(0)
 
@@ -135,9 +153,10 @@ def read_export_request(file):
         if str(sheet.cell_value(r,1)) == '' or sheet.cell_value(r,1) == None:
             continue
 
-        row = sheet.row_values(r, 1)
+        row = sheet.row_values(r)
         enterprise = None
         itemImportCount += 1
+
         try:
             percent = str(int((itemImportCount / itemCount) * 100)) + '%'
         except ZeroDivisionError:
@@ -153,24 +172,7 @@ def read_export_request(file):
             barcodeListSet.add(i.upc)
             newItemList.append(i)
         else:
-            safePrint(row[0] + ' has duplicate upc [' + str(i.upc) + ']')
-            c = input('[C]ontinue, [S]kip, [N]ew, [A]bort -> ')
-            c = c or 'c'
-            if (str(c)).casefold() == 'c'.casefold():
-                print('continuing')
-                barcodeListSet.add(i.upc)
-                newItemList.append(i)
-            elif str(c).casefold() == 'a'.casefold():
-                print('Aborting')
-                os._exit(0)
-            elif str(c).casefold() == 'n'.casefold():
-                print('generating new upc')
-                i.updateUPC(generate_unique_barcode(i.upc))
-                barcodeListSet.add(i.upc)
-                newItemList.append(i)
-            else:
-                print('skipping')
-                continue
+            continue
 
     print(str(file) + ' imported successfully\n')
 
@@ -388,13 +390,11 @@ def generate_pre_access_file(file=None):
         
     for i, item in zip(range((lastRow + 1), len(newItemList) + lastRow + 1), newItemList):
         print(str(i) + '/' + str(len(newItemList)) + ' ' + item.name)
-        item.category = 'temp'
-        item.primary = 'placeholder'
         row = sheet.row(i)
         row.write(0, item.enterpriseNumber)
         row.write(1, item.name)
         row.write(3, item.cost)
-        row.write(4, 'Prepackaged Items')
+        row.write(4, item.source)
         row.write(5, item.category)
         row.write(6, item.primary)
         row.write(9, item.manufacturer)
