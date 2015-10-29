@@ -32,7 +32,8 @@ class BarcodeItem:
         self.brand = str(brand).strip()
         self.upc = str(upc).strip().split(sep='.', maxsplit=1)[0]
         self.cost = cost
-        self.enterpriseNumber = enterprise or 'MMS-{0}'.format(self.upc)
+        self.enterpriseNumber = enterprise or 'MMS-{0}'.format(
+            self.upc.strip('MMS-'))
         self.has_defined_MMS = enterprise
         self.category = cat
         self.primary = pri
@@ -44,8 +45,9 @@ class BarcodeItem:
     def updateUPC(self, upc):
         self.upc = str(upc).strip()
         if not self.has_defined_MMS:
-            self.enterpriseNumber = 'MMS-{0}'.format(self.upc)
-        
+            self.enterpriseNumber = 'MMS-{0}'.format(self.upc.strip('MMS-'))
+
+
 def calculateBarcodeChecksum(barcode):
     barcode = str(barcode)
     if len(barcode) != 11:
@@ -64,7 +66,8 @@ def calculateBarcodeChecksum(barcode):
             return barcode + str(10 - tempSum)
         else:
             return barcode + str(tempSum)
-        
+
+
 def shortenName(name):
     try:
         safePrint('Shorten\n' + name + ' (' + str(len(name)) + ')\n')
@@ -77,4 +80,3 @@ def shortenName(name):
     except UnicodeEncodeError:
         print('There was an error processing this name')
         return '!' + name
-   

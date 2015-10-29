@@ -4,6 +4,7 @@ import os, shutil
 import sys
 import re
 import codecs
+import pickle
 import pdb
 import random
 from datetime import date
@@ -24,6 +25,11 @@ itemIndex = 0
 sheet = None
 lastRow = None
 book = None
+
+BARCODE_LIST_FILE = 'barcodeList.txt'
+GENERATED_BARCODES_FILE = 'generated_barcodes.p'
+
+# TODO add barcoderator MMS-999999919579
 
 
 def open_file(options=None):
@@ -56,11 +62,16 @@ def open_directory(dir=None):
         options = None
     else:
         dir_path = dir
+
+    if not dir_path:
+        print('No file selected.  Aborting.')
+        os._exit(0)
     enumerate_files(dir_path)
     for file in os.listdir(dir_path):
         if file.endswith('.xls') and 'Upload_to_Access' not in file:
             if 'POS Export' in file:
-                read_export_request(file)
+                #read_daily_export_request(file)
+                continue
             else:
                 read_barcode_request(file)
             generate_pre_access_file()
@@ -97,6 +108,7 @@ def archive_file(file):
         else:
             print('{0} has not been archived.'.format(file))
 
+
 def enumerate_files(path):
     for file in os.listdir(path):
         if file.endswith('.xls') and 'Upload_to_Access' not in file:
@@ -130,8 +142,7 @@ def count_items(file):
         itemCount += 1
     
 
-def import_barcode_database():
-    file = 'barcodeList.txt'
+def import_barcode_database(file):
     if os.path.exists(file):
         with codecs.open(file, 'r+', 'utf-8') as f:
             for barcode in f:
@@ -143,11 +154,16 @@ def import_barcode_database():
         update_barcode_database()
 
 
-def read_export_request(file):
+# Suspending this function until a better way of determining duplicates is found
+def read_daily_export_request(file):
     global itemImportCount
     print('reading daily export request')
     book = open_workbook(file)
     sheet = book.sheet_by_index(0)
+
+    if sheet.nrows > 100:
+        print('Skipping {0} because it has {1} items'.format(file, sheet.nrows))
+        return
 
     for r in range(1, sheet.nrows):
         if str(sheet.cell_value(r,1)) == '' or sheet.cell_value(r,1) == None:
@@ -166,6 +182,8 @@ def read_export_request(file):
 
         manufacturer = row[8]
         brand = row[8]
+        name = row[2]
+        upc = generate_new_barcode()
         i = BarcodeItem(row[2], manufacturer, brand, row[1], row[5],
                         row[6], row[7], enterprise=enterprise)
         if i.upc not in barcodeListSet:
@@ -184,6 +202,7 @@ def read_barcode_request(file):
     sheet = book.sheet_by_index(0)
     
     startRow = 0
+    # Determine which row data starts on
     for r in range(sheet.nrows):
         if sheet.cell_value(r,0) == 1:
             startRow = r
@@ -198,14 +217,26 @@ def read_barcode_request(file):
         row = sheet.row_values(r, 1)
         enterprise = None
         itemImportCount += 1
-        print('Import Progress: ' + str(itemImportCount) + '/' + str(itemCount) + '\n')
         try:
-            print(str(int((itemImportCount / itemCount) * 100)) + '%\n')
+            percent = str(int((itemImportCount / itemCount) * 100)) + '%'
         except ZeroDivisionError:
-            pass
+            percent = 'x%'
+        print('Import Progress: {0}/{1} {2}\n'.format(itemImportCount, itemCount, percent))
+
+        name = row[0]
+        manufacturer = row[1]
+        brand = row[2]
+        if row[3] == '' or row[3] == 'n/a':
+            upc = generate_new_barcode()
+        else:
+            upc = row[3]
+
+        cost = row[5]
         if 'MMS' in row[1]: #Utilize predefined MMS number
             enterprise = row[1]
-        i = BarcodeItem(row[0], row[1], row[2], row[3], row[5], enterprise=enterprise)
+
+        i = BarcodeItem(name, manufacturer, brand,
+                        upc, cost, enterprise=enterprise)
         if i.upc not in barcodeListSet:
             barcodeListSet.add(i.upc)
             newItemList.append(i)
@@ -235,6 +266,7 @@ def read_barcode_request(file):
 
 
 def update_barcode_database():
+    """Legacy method that can probably be deprecated"""
     file = 'C:/Users/Ryan/workspace/Horizon Barcode Prepare/src/UploadTemp4 Master.xls'
     print('Extracting barcode data base from ' + str(file))
     sheet = open_workbook(file).sheet_by_index(3)
@@ -258,7 +290,7 @@ def update_barcode_database():
 
 def output_barcode_list_to_file(file=None):
     file = file or 'barcodeList.txt'
-    if barcodeListSet == None:
+    if not barcodeListSet:
         print('Barcode List is empty. Aborting.')
         return
     else:
@@ -269,6 +301,8 @@ def output_barcode_list_to_file(file=None):
                     f.write(str(int(x)) + '\r\n')
                 except ValueError:
                     f.write(str(x) + '\r\n')
+    with open(GENERATED_BARCODES_FILE, 'wb+') as f:
+        pickle.dump(GENERATED_BARCODES, f)
                     
     print('Barcode output complete.')
 
@@ -440,10 +474,22 @@ def generate_spot_check(file=None):
     print('Spot Check Generation Complete\n')
     os.startfile(file)
 
+
 def gSC():
     generate_spot_check()
-        
-    
-import_barcode_database()
+
+
+def generate_new_barcode():
+    global GENERATED_BARCODES
+    last_barcode = int(GENERATED_BARCODES[-1].split('-')[1])
+    new_barcode = 'MMS-{0}'.format(last_barcode + 1)
+    GENERATED_BARCODES.append(new_barcode)
+    return new_barcode
+
+
+import_barcode_database(BARCODE_LIST_FILE)
+with open(GENERATED_BARCODES_FILE, 'rb+') as f:
+    GENERATED_BARCODES = pickle.load(f)
+
 if not sys.flags.interactive:
     open_directory()
