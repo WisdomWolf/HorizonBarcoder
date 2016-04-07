@@ -25,6 +25,7 @@ class BarcodeItem:
     
     def __init__(self, name, manufacturer, brand, upc, cost=0,
                 cat='temp', pri='placeholder', enterprise=None):
+                
         self.name = str(name).strip()
         if len(self.name) > 30:
             self.name = self.name[:30]
@@ -32,8 +33,10 @@ class BarcodeItem:
         self.brand = str(brand).strip()
         self.upc = str(upc).strip().split(sep='.', maxsplit=1)[0]
         self.cost = cost
-        self.enterpriseNumber = enterprise or 'MMS-{0}'.format(
-            self.upc.strip('MMS-'))
+        if enterprise:
+            self.enterpriseNumber = 'MMS-{0}'.format(enterprise.strip('MMS- '))
+        else:
+            self.enterpriseNumber =  'MMS-{0}'.format(self.upc.strip('MMS-'))
         self.has_defined_MMS = enterprise
         self.category = cat
         self.primary = pri

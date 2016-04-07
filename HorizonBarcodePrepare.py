@@ -1,4 +1,4 @@
-#!/usr/bin/python3
+#!/usr/bin/python3.4
 
 import os, shutil
 import sys
@@ -242,17 +242,17 @@ def read_barcode_request(file):
             newItemList.append(i)
         else:
             safePrint(row[0] + ' has duplicate upc [' + str(i.upc) + ']')
-            c = input('[C]ontinue, [S]kip, [N]ew, [A]bort -> ')
-            c = c or 'c'
-            if (str(c)).casefold() == 'c'.casefold():
+            choice = input('[C]ontinue, [S]kip, [N]ew, [A]bort -> ')
+            choice = choice or 'n'
+            if (str(choice)).casefold() == 'c'.casefold():
                 print('continuing')
                 #i = BarcodeItem(row[0], row[1], row[2], row[3], row[5])
                 barcodeListSet.add(i.upc)
                 newItemList.append(i)
-            elif str(c).casefold() == 'a'.casefold():
+            elif str(choice).casefold() == 'a'.casefold():
                 print('Aborting')
                 os._exit(0)
-            elif str(c).casefold() == 'n'.casefold():
+            elif str(choice).casefold() == 'n'.casefold():
                 print('generating new upc')
                # i = BarcodeItem(row[0], row[1], row[2], row[3], row[5])
                 i.updateUPC(generate_unique_barcode(i.upc))
@@ -423,7 +423,11 @@ def generate_pre_access_file(file=None):
             row1.write(col, headingList[col])
         
     for i, item in zip(range((lastRow + 1), len(newItemList) + lastRow + 1), newItemList):
-        print(str(i) + '/' + str(len(newItemList)) + ' ' + item.name)
+        try:
+            print('{0}/{1} {2}'.format(i, len(newItemList), item.name))
+        except UnicodeEncodeError:
+            print('{0}/{1} {2}'.format(i, len(newItemList), 'acketz'))
+            
         row = sheet.row(i)
         row.write(0, item.enterpriseNumber)
         row.write(1, item.name)
@@ -481,15 +485,20 @@ def gSC():
 
 def generate_new_barcode():
     global GENERATED_BARCODES
-    last_barcode = int(GENERATED_BARCODES[-1].split('-')[1])
-    new_barcode = 'MMS-{0}'.format(last_barcode + 1)
+    try:
+        last_barcode = int(GENERATED_BARCODES[-1].split('-')[1])
+    except IndexError:
+        last_barcode = int(GENERATED_BARCODES[-1])
+    new_barcode = '{0}'.format(last_barcode + 1)
     GENERATED_BARCODES.append(new_barcode)
     return new_barcode
 
 
-import_barcode_database(BARCODE_LIST_FILE)
-with open(GENERATED_BARCODES_FILE, 'rb+') as f:
-    GENERATED_BARCODES = pickle.load(f)
-
-if not sys.flags.interactive:
-    open_directory()
+if __name__ == "__main__":
+    import_barcode_database(BARCODE_LIST_FILE)
+    with open(GENERATED_BARCODES_FILE, 'rb+') as f:
+        GENERATED_BARCODES = pickle.load(f)
+    if not sys.flags.interactive:
+        open_directory()
+    else:
+        print('use open_directory() to get started')
