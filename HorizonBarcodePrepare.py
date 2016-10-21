@@ -223,17 +223,23 @@ def read_barcode_request(file):
             percent = 'x%'
         print('Import Progress: {0}/{1} {2}\n'.format(itemImportCount, itemCount, percent))
 
-        name = row[0]
-        manufacturer = row[1]
-        brand = row[2]
-        if row[3] == '' or row[3] == 'n/a':
-            upc = generate_new_barcode()
-        else:
-            upc = row[3]
+        try:
+            name = row[0]
+            manufacturer = row[1]
+            brand = row[2]
+            if row[3] == '' or row[3] == 'n/a':
+                upc = generate_new_barcode()
+            else:
+                upc = row[3]
 
-        cost = row[5]
-        if 'MMS' in row[1]: #Utilize predefined MMS number
-            enterprise = row[1]
+            cost = row[5]
+            if 'MMS' in row[1]: #Utilize predefined MMS number
+                enterprise = row[1]
+                
+        except IndexError:
+            messagebox.showerror(title='Bad File',
+                            message='A problem with {} prevented it from being processed correctly'.format(file))
+            break
 
         i = BarcodeItem(name, manufacturer, brand,
                         upc, cost, enterprise=enterprise)
