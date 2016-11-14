@@ -35,7 +35,7 @@ GENERATED_BARCODES_FILE = 'generated_barcodes.p'
 def open_file(options=None):
     if options == None:
         options = {}
-        options['defaultextension'] = '.xls' 
+        options['defaultextension'] = '.xls'
         options['filetypes'] = [('Excel Files', '.xls')]
         options['title'] = 'Open...'
     file_opt = options
@@ -83,7 +83,7 @@ def open_directory(dir=None):
                 except PermissionError:
                     input('{0} is locked. Press enter to retry'.format(file))
                     done = False
-            
+
     generate_spot_check('Upload_to_Access.xls')
 
 
@@ -113,7 +113,7 @@ def enumerate_files(path):
     for file in os.listdir(path):
         if file.endswith('.xls') and 'Upload_to_Access' not in file:
             count_items(file)
-    
+
     global itemIndex
     global itemCount
     itemIndex = itemCount
@@ -122,7 +122,7 @@ def enumerate_files(path):
 def count_items(file):
     book = open_workbook(file)
     sheet = book.sheet_by_index(0)
-    
+
     startRow = 0
     for r in range(sheet.nrows):
         if sheet.cell_value(r,0) == 1:
@@ -133,14 +133,14 @@ def count_items(file):
             break
     else:
         startRow = 1
-            
+
     for r in range(startRow, sheet.nrows):
         if str(sheet.cell_value(r,1)) == '' or sheet.cell_value(r,1) == None:
             continue
-            
+
         global itemCount
         itemCount += 1
-    
+
 
 def import_barcode_database(file):
     if os.path.exists(file):
@@ -200,7 +200,7 @@ def read_barcode_request(file):
     print('reading barcode request')
     book = open_workbook(file)
     sheet = book.sheet_by_index(0)
-    
+
     startRow = 0
     # Determine which row data starts on
     for r in range(sheet.nrows):
@@ -209,11 +209,11 @@ def read_barcode_request(file):
             break
         elif sheet.cell_value(r,0) == 'Example':
             startRow = int(r) + 1
-            
+
     for r in range(startRow, sheet.nrows):
         if str(sheet.cell_value(r,1)) == '' or sheet.cell_value(r,1) == None:
             continue
-            
+
         row = sheet.row_values(r, 1)
         enterprise = None
         itemImportCount += 1
@@ -235,7 +235,7 @@ def read_barcode_request(file):
             cost = row[5]
             if 'MMS' in row[1]: #Utilize predefined MMS number
                 enterprise = row[1]
-                
+
         except IndexError:
             messagebox.showerror(title='Bad File',
                             message='A problem with {} prevented it from being processed correctly'.format(file))
@@ -248,8 +248,9 @@ def read_barcode_request(file):
             newItemList.append(i)
         else:
             safePrint(row[0] + ' has duplicate upc [' + str(i.upc) + ']')
-            choice = input('[C]ontinue, [S]kip, [N]ew, [A]bort -> ')
-            choice = choice or 'n'
+            # choice = input('[C]ontinue, [S]kip, [N]ew, [A]bort -> ')
+            # choice = choice or 'n'
+            choice = 'c'
             if (str(choice)).casefold() == 'c'.casefold():
                 print('continuing')
                 #i = BarcodeItem(row[0], row[1], row[2], row[3], row[5])
@@ -267,7 +268,7 @@ def read_barcode_request(file):
             else:
                 print('skipping')
                 continue
-                
+
     print(str(file) + ' imported successfully\n')
 
 
@@ -289,7 +290,7 @@ def update_barcode_database():
             print('75%')
         elif row == int(sheet.nrows * 0.9):
             print('90%')
-         
+
         if barcode not in barcodeListSet:
             barcodeListSet.add(barcode)
 
@@ -309,7 +310,7 @@ def output_barcode_list_to_file(file=None):
                     f.write(str(x) + '\r\n')
     with open(GENERATED_BARCODES_FILE, 'wb+') as f:
         pickle.dump(GENERATED_BARCODES, f)
-                    
+
     print('Barcode output complete.')
 
 
@@ -331,19 +332,19 @@ def pick_category(name):
         print('Pick a Category for\n\n' + name + '\n')
     except UnicodeEncodeError:
         print('Unable to parse item name\n')
-        
+
     catList = list(sorted(BarcodeItem.categories.keys()))
     for i, cat in zip(range(len(catList)), catList):
         print(str(i + 1) + '. ' + str(cat))
-        
+
     if catChoice:
         c = input('\n[' + str(catChoice) + '] ->')
         c = c or catChoice
     else:
         c = input('\n->')
-        
+
     c = int(c)
-    
+
     if c == -1:
         print('Aborting')
         return
@@ -360,15 +361,15 @@ def pick_primary(priList):
     print('\nPick a subcategory')
     for i, cat in zip(range(len(priList)), priList):
         print(str(i + 1) + '. ' + str(cat).title())
-    
+
     if priChoice:
         c = input('\n[' + str(priChoice) + '] ->')
         c = c or priChoice
     else:
         c = input('\n->')
-        
+
     c = int(c)
-    
+
     if c == -1:
         print('Aborting')
         return
@@ -386,8 +387,8 @@ def generate_unique_barcode(barcode, leadingZero=False):
         x = int(barcode)
     except ValueError:
         l = list(barcodeListSet)
-        barcode = l[-1] 
-        
+        barcode = l[-1]
+
     if barcode in barcodeListSet:
         if barcode[0] == '0':
             leadingZero = True
@@ -412,7 +413,7 @@ def generate_pre_access_file(file=None):
     if newItemList == None:
         print('No items to process.')
         return
-    
+
     file = file or 'Upload_to_Access.xls'
     global sheet, lastRow, book
     if not sheet:
@@ -424,16 +425,16 @@ def generate_pre_access_file(file=None):
                        'Cost', 'Source', 'Category', 'Primary', 'Secondary',
                        'Detail', 'Manufacturer', 'Size/Quantity', 'Station',
                        'Brand', 'UPC CODES']
-        
+
         for col in range(len(headingList)):
             row1.write(col, headingList[col])
-        
+
     for i, item in zip(range((lastRow + 1), len(newItemList) + lastRow + 1), newItemList):
         try:
             print('{0}/{1} {2}'.format(i, len(newItemList), item.name))
         except UnicodeEncodeError:
             print('{0}/{1} {2}'.format(i, len(newItemList), 'acketz'))
-            
+
         row = sheet.row(i)
         row.write(0, item.enterpriseNumber)
         row.write(1, item.name)
@@ -446,7 +447,7 @@ def generate_pre_access_file(file=None):
         row.write(13, item.upc)
         lastRow = i
         print('Last Row:', lastRow)
-        
+
     try:
         book.save(file)
     except PermissionError:
@@ -456,7 +457,7 @@ def generate_pre_access_file(file=None):
         except PermissionError:
             print('You failed.')
             os._exit()
-            
+
     output_barcode_list_to_file()
     newItemList.clear()
     print('Pre-Access XLS output completed.\n')
@@ -471,16 +472,16 @@ def generate_spot_check(file=None):
     book = open_workbook(file)
     sheet = book.sheet_by_index(0)
     spotCheckMap = {}
-    
+
     toBeCheckedList = random.sample(range(1, sheet.nrows), round(sheet.nrows * .2))
-    
+
     for row in toBeCheckedList:
         spotCheckMap[sheet.cell_value(row, 1)] = sheet.cell_value(row, 13)
-        
+
     with codecs.open('spot_check.csv', 'w+', 'utf8') as f:
             for item, sku in spotCheckMap.items():
                 f.write(str(sku) + ',' + str(item) + '\r\n')
-                
+
     print('Spot Check Generation Complete\n')
     os.startfile(file)
 

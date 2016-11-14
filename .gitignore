@@ -62,4 +62,9 @@ Archive/**
 
 # Misc
 **Thumbs.db
-barcodeList.txt
+**.txt
+**.p
+**.zip
+**.lnk
+**.venv
+.idea/**
